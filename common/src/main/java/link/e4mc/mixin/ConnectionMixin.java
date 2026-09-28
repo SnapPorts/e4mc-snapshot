@@ -3,7 +3,6 @@ package link.e4mc.mixin;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import link.e4mc.DialtoneConnectionExtensions;
-import link.e4mc.E4mcClient;
 import link.e4mc.SmugglersInetSocketAddress;
 import link.e4mc.dialtone.DialtoneAddress;
 import link.e4mc.dialtone.DialtoneAmbientSession;
@@ -24,7 +23,6 @@ import java.net.InetSocketAddress;
 public abstract class ConnectionMixin implements DialtoneConnectionExtensions {
 
     @Shadow private Channel channel;
-    @Shadow private boolean encrypted;
     @Unique
     private static DialtoneAddress e4mc$smuggledDialtoneAddress = null;
 
@@ -36,21 +34,14 @@ public abstract class ConnectionMixin implements DialtoneConnectionExtensions {
         return null;
     }
 
-    @Inject(method = "/^(connect|method_52271|m_290025_|)$/", at = @At("HEAD"))
+    @Inject(method = "connect", at = @At("HEAD"))
     private static void hijackStart(InetSocketAddress inetSocketAddress, @Coerce Object obj, Connection connection, CallbackInfoReturnable<ChannelFuture> cir) {
         if (inetSocketAddress instanceof SmugglersInetSocketAddress smuggledAddress) {
             e4mc$smuggledDialtoneAddress = new DialtoneAddress(smuggledAddress.ticket);
         }
     }
 
-    @Surrogate
-    private static void hijackStart(InetSocketAddress inetSocketAddress, boolean bl, Connection connection, CallbackInfoReturnable<ChannelFuture> cir) {
-        if (inetSocketAddress instanceof SmugglersInetSocketAddress smuggledAddress) {
-            e4mc$smuggledDialtoneAddress = new DialtoneAddress(smuggledAddress.ticket);
-        }
-    }
-
-    @ModifyArg(method = "/^(connect|method_52271|m_290025_|)$/", at = @At(value = "INVOKE", target = "Lio/netty/bootstrap/Bootstrap;channel(Ljava/lang/Class;)Lio/netty/bootstrap/AbstractBootstrap;"))
+    @ModifyArg(method = "connect", at = @At(value = "INVOKE", target = "Lio/netty/bootstrap/Bootstrap;channel(Ljava/lang/Class;)Lio/netty/bootstrap/AbstractBootstrap;"))
     private static Class hijackChannel(Class clazz) {
         if (e4mc$smuggledDialtoneAddress != null) {
             return DialtoneChannel.class;
@@ -59,7 +50,7 @@ public abstract class ConnectionMixin implements DialtoneConnectionExtensions {
         }
     }
 
-    @ModifyArg(method = "/^(connect|method_52271|m_290025_|)$/", at = @At(value = "INVOKE", target = "Lio/netty/bootstrap/Bootstrap;group(Lio/netty/channel/EventLoopGroup;)Lio/netty/bootstrap/AbstractBootstrap;"))
+    @ModifyArg(method = "connect", at = @At(value = "INVOKE", target = "Lio/netty/bootstrap/Bootstrap;group(Lio/netty/channel/EventLoopGroup;)Lio/netty/bootstrap/AbstractBootstrap;"))
     private static EventLoopGroup hijackGroup(EventLoopGroup group) {
         if (e4mc$smuggledDialtoneAddress != null) {
             return DialtoneAmbientSession.INSTANCE.group;
@@ -68,7 +59,7 @@ public abstract class ConnectionMixin implements DialtoneConnectionExtensions {
         }
     }
 
-    @Redirect(method = "/^(connect|method_52271|m_290025_|)$/", at = @At(value = "INVOKE", target = "Lio/netty/bootstrap/Bootstrap;connect(Ljava/net/InetAddress;I)Lio/netty/channel/ChannelFuture;"))
+    @Redirect(method = "connect", at = @At(value = "INVOKE", target = "Lio/netty/bootstrap/Bootstrap;connect(Ljava/net/InetAddress;I)Lio/netty/channel/ChannelFuture;"))
     private static ChannelFuture hijackConnect(Bootstrap instance, InetAddress inetHost, int inetPort) {
         if (e4mc$smuggledDialtoneAddress != null) {
             var ret = instance.connect(e4mc$smuggledDialtoneAddress);
@@ -82,7 +73,6 @@ public abstract class ConnectionMixin implements DialtoneConnectionExtensions {
     @Inject(method = "setEncryptionKey", at = @At("HEAD"), cancellable = true)
     private void killDoubleEncryption(Cipher cipher, Cipher cipher2, CallbackInfo ci) {
         if (channel instanceof DialtoneChannel) {
-            encrypted = true;
             ci.cancel();
         }
     }

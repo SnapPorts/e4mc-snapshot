@@ -28,7 +28,7 @@ public abstract class PlayerListMixin {
 
     @Shadow public abstract MinecraftServer getServer();
 
-    @Inject(method = "/^<init>$/", at = @At("TAIL"))
+    @Inject(method = "<init>", at = @At("TAIL"))
     void injectListLoads(CallbackInfo ci) {
         if (Config.INSTANCE.restoreDedicatedCommands.value()) {
             Mirror.setUsingWhitelist(getServer(), (PlayerList) (Object) this, Config.INSTANCE.useWhiteList.value());
@@ -45,7 +45,7 @@ public abstract class PlayerListMixin {
         }
     }
 
-    @Inject(method = "/^(canPlayerLogin|method_14586|checkCanJoin|m_6418_)$/", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "canPlayerLogin", at = @At("HEAD"), cancellable = true)
     public void allowOwnerLogin(SocketAddress socketAddress, @Coerce Object gameProfile, CallbackInfoReturnable<Component> cir) {
         if (Mirror.isSingleplayerOwnerObj(getServer(), gameProfile)) {
             cir.setReturnValue(null);

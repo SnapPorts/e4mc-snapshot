@@ -1,22 +1,19 @@
 package link.e4mc;
 
-import dev.architectury.injectables.annotations.ExpectPlatform;
+import link.e4mc.fabric.AgnosImpl;
 
 import java.nio.file.Path;
 
 public class Agnos {
-    @ExpectPlatform
     public static boolean isClient() {
-        return false;
+        return AgnosImpl.isClient();
     }
 
-    @ExpectPlatform
     public static Path configDir() {
-        return null;
+        return AgnosImpl.configDir();
     }
 
-    @ExpectPlatform
     public static Path jarPath() {
-        return null;
+        return AgnosImpl.jarPath();
     }
 }
